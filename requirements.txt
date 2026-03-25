@@ -1,0 +1,7 @@
+aiogram==3.4.1
+groq>=1.1.0
+python-dotenv==1.0.0
+pydantic-settings==2.1.0
+httpx>=0.28.0
+flask>=2.0.0
+flask-cors>=3.0.0

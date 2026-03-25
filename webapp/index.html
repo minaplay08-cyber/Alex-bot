@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Алекс | Dark Romance</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Raleway:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <div class="bg-effects">
+            <div class="glow glow-1"></div>
+            <div class="glow glow-2"></div>
+            <div class="particles"></div>
+        </div>
+
+        <header class="header">
+            <div class="logo">
+                <span class="logo-text">А</span>
+                <span class="logo-accent">лекс</span>
+            </div>
+            <p class="tagline">Dark Romance</p>
+        </header>
+
+        <main class="main-content">
+            <div class="profile-card">
+                <div class="avatar-container">
+                    <div class="avatar-ring"></div>
+                    <div class="avatar-ring ring-2"></div>
+                    <div class="avatar">А</div>
+                </div>
+                <h2 class="profile-name">Алекс</h2>
+                <p class="profile-status">
+                    <span class="status-dot"></span>
+                    Онлайн
+                </p>
+            </div>
+
+            <div class="mood-section">
+                <h3 class="section-title">Настроение</h3>
+                <div class="mood-buttons">
+                    <button class="mood-btn" data-mood="normal">
+                        <span class="mood-emoji">☀️</span>
+                        <span>Обычный</span>
+                    </button>
+                    <button class="mood-btn active" data-mood="dark">
+                        <span class="mood-emoji">🌙</span>
+                        <span>Тёмный</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <div class="stat-card">
+                    <div class="stat-icon">💬</div>
+                    <div class="stat-value" id="messageCount">0</div>
+                    <div class="stat-label">Сообщений</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🧠</div>
+                    <div class="stat-value" id="memoryCount">0</div>
+                    <div class="stat-label">В памяти</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⭐</div>
+                    <div class="stat-value" id="sessionTime">0м</div>
+                    <div class="stat-label">Время</div>
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <button class="action-btn" id="btnProfile">
+                    <span class="action-icon">👤</span>
+                    Профиль
+                </button>
+            </div>
+
+            <div class="profile-section" id="profileSection" style="display: none;">
+                <h3 class="section-title">Настройки профиля</h3>
+                
+                <div class="settings-group">
+                    <label class="settings-label">Твоё имя</label>
+                    <input type="text" class="settings-input" id="inputName" placeholder="Как тебя зовут?">
+                </div>
+
+                <div class="settings-group">
+                    <label class="settings-label">Твоя персона</label>
+                    <textarea class="settings-textarea" id="inputPersona" placeholder="Опиши себя... интересы, характер, настроение..."></textarea>
+                </div>
+
+                <div class="settings-group">
+                    <label class="settings-label">Любимый цвет</label>
+                    <div class="color-options">
+                        <div class="color-option" data-color="#DC143C" style="background: #DC143C;"></div>
+                        <div class="color-option" data-color="#8B0000" style="background: #8B0000;"></div>
+                        <div class="color-option" data-color="#4A0E4E" style="background: #4A0E4E;"></div>
+                        <div class="color-option" data-color="#1E3A5F" style="background: #1E3A5F;"></div>
+                        <div class="color-option" data-color="#2F4F4F" style="background: #2F4F4F;"></div>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <label class="settings-label">Режим общения</label>
+                    <div class="chat-mode-options">
+                        <button class="chat-mode-btn active" data-mode="romantic">🌹 Романтичный</button>
+                        <button class="chat-mode-btn" data-mode="friendly">😊 Дружеский</button>
+                        <button class="chat-mode-btn" data-mode="mysterious">🌙 Таинственный</button>
+                    </div>
+                </div>
+
+                <button class="save-btn" id="btnSaveProfile">Сохранить настройки</button>
+            </div>
+                <button class="action-btn" id="btnMemory">
+                    <span class="action-icon">🧠</span>
+                    Память
+                </button>
+                <button class="action-btn" id="btnRemind">
+                    <span class="action-icon">🔔</span>
+                    Напоминания
+                </button>
+            </div>
+
+            <div class="chat-preview">
+                <div class="chat-header">
+                    <span>Последний разговор</span>
+                    <span class="chat-time">только что</span>
+                </div>
+                <div class="chat-bubble">
+                    <p id="lastMessage">Напиши мне что-нибудь...</p>
+                </div>
+                <button class="open-chat-btn" id="openChat">
+                    Открыть чат →
+                </button>
+            </div>
+
+            <div class="secret-section">
+                <p class="secret-text">"Некоторые тайны лучше хранить в темноте..."</p>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="footer-line"></div>
+            <p class="footer-text">Создано с тайнами ♠</p>
+        </footer>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-icon" id="modalIcon">👤</div>
+            <h3 class="modal-title" id="modalTitle">Профиль</h3>
+            <p class="modal-message" id="modalMessage">Сообщение</p>
+            <button class="modal-close" id="modalClose">Закрыть</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
