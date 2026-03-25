@@ -11,7 +11,6 @@ if sys.platform == 'win32':
 from aiogram import Bot, Dispatcher, Router, F
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from aiogram.filters import Command
-from aiogram.client.session.aiohttp import AiohttpSession
 from groq import Groq
 
 load_dotenv()
@@ -26,9 +25,7 @@ from alex_prompt import (
 
 settings = Settings()
 
-PROXY_URL = "socks5://5.75.202.83:10000"
-session = AiohttpSession(proxy=PROXY_URL) if PROXY_URL else None
-bot = Bot(token=settings.telegram_bot_token, session=session)
+bot = Bot(token=settings.telegram_bot_token)
 dp = Dispatcher()
 router = Router()
 client = Groq(api_key=settings.groq_api_key)
