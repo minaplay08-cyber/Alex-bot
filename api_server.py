@@ -2,8 +2,8 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import json
 import os
-import asyncio
-import threading
+import subprocess
+import sys
 
 app = Flask(__name__, static_folder='webapp', static_url_path='')
 CORS(app, resources={r"/api/*": {"origins": "*"}})
@@ -92,21 +92,15 @@ def save_profile(user_id):
     return jsonify({"success": True, "message": "Профиль сохранён!"})
 
 
-def run_bot():
-    import sys
-    import main as bot_module
-    asyncio.run(bot_module.main())
-
-
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) > 1 and sys.argv[1] == "bot":
-        run_bot()
-    else:
-        from dotenv import load_dotenv
-        load_dotenv()
-        
-        bot_thread = threading.Thread(target=run_bot, daemon=True)
-        bot_thread.start()
-        
-        app.run(host="0.0.0.0", port=8080)
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    bot_process = subprocess.Popen(
+        [sys.executable, "main.py"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT
+    )
+    print(f"Бот запущен с PID: {bot_process.pid}")
+    
+    app.run(host="0.0.0.0", port=8080)
