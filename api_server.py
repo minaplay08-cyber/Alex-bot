@@ -6,7 +6,7 @@ import asyncio
 import threading
 
 app = Flask(__name__, static_folder='webapp', static_url_path='')
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 DATA_FILE = "user_data.json"
 
