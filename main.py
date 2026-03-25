@@ -385,13 +385,17 @@ async def cmd_start(message: Message):
         await message.answer(
             response.choices[0].message.content + 
             "\n\n🌙 Хочешь увидеть кое-что интересное?",
-            reply_markup=WEBAPP_KEYBOARD
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🌙 Открыть App", web_app=WebAppInfo(url=WEBAPP_URL))]
+            ])
         )
     except Exception:
         await message.answer(
             "👋 С возвращением!\n\n"
             "🌙 Хочешь увидеть кое-что интересное?",
-            reply_markup=WEBAPP_KEYBOARD
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🌙 Открыть App", web_app=WebAppInfo(url=WEBAPP_URL))]
+            ])
         )
 
 
