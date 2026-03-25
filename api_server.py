@@ -1,11 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import json
 import os
 import asyncio
 import threading
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='webapp', static_url_path='')
 CORS(app)
 
 DATA_FILE = "user_data.json"
@@ -24,6 +24,11 @@ def load_data():
 def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+@app.route("/")
+def index():
+    return send_from_directory('webapp', 'index.html')
 
 
 @app.route("/api/profile/<user_id>", methods=["GET"])

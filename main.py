@@ -71,7 +71,7 @@ MAIN_MENU = InlineKeyboardMarkup(inline_keyboard=[
      InlineKeyboardButton(text="📖 Помощь", callback_data="menu_help")],
 ])
 
-WEBAPP_URL = "https://itchy-schools-scream.loca.lt"
+WEBAPP_URL = "https://alex-bot-production-214d.up.railway.app"
 
 WEBAPP_KEYBOARD = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(
