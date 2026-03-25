@@ -30,6 +30,10 @@ def save_data(data):
 def index():
     return send_from_directory('webapp', 'index.html')
 
+@app.route("/app")
+def app_page():
+    return send_from_directory('webapp', 'index.html')
+
 
 @app.route("/api/profile/<user_id>", methods=["GET"])
 def get_profile(user_id):
