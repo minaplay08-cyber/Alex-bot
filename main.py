@@ -726,14 +726,17 @@ async def handle_message(message: Message):
     
     add_to_history(user_id, "user", user_message)
     
+    history = get_conversation_history(user_id, limit=20)
     messages = [{"role": "system", "content": prompt}]
+    for msg in history:
+        messages.append(msg)
     
     try:
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=messages,
             max_tokens=512,
-            temperature=0.9
+            temperature=1.2
         )
         
         assistant_message = response.choices[0].message.content
