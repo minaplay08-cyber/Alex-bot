@@ -583,6 +583,7 @@ async def cmd_help(message: Message):
 `/setgender` — выбрать пол
 `/setappearance Описание` — внешность
 `/setinterests Интересы` — интересы
+`/stats` — твоя статистика 📊
 
 ⚙️ *Настройки*
 `/remind` — вкл/выкл напоминания
@@ -610,6 +611,16 @@ async def cmd_help(message: Message):
 `/personality` — тип личности 🎭
 `/wisdom` — мудрость дня 🌟
 `/dice` — бросить кубик 🎲
+`/slot` — игровой автомат 🎰
+`/pick в1, в2, в3` — выбор за тебя 🎯
+`/whowin а vs б` — кто круже ⚔️
+`/hot` — насколько ты горячий 🔥
+`/horoscope` — гороскоп 🔮
+`/motivation` — мотивация 💪
+`/meme` — мем дня 🖼️
+`/coin` — подбросить монетку 🪙
+`/randomnum` — случайное число 🎱
+`/reverse текст` — реверс текста 🔄
 
 🎮 *Меню*
 `/menu` — красивое меню
@@ -1217,6 +1228,304 @@ async def cmd_dice(message: Message):
     dice = random.randint(1, 6)
     emoji = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"][dice - 1]
     await message.answer(f"🎲 Бросок!\n\n{emoji} — *{dice}*", parse_mode="Markdown")
+
+
+@router.message(Command("slot"))
+async def cmd_slot(message: Message):
+    symbols = ["🍒", "🍋", "🍊", "🍇", "💎", "⭐", "🎰", "7️⃣"]
+    
+    roll = lambda: random.choice(symbols)
+    result = [roll(), roll(), roll()]
+    result_str = " | ".join(result)
+    
+    if result[0] == result[1] == result[2]:
+        win_text = "\n\n🎉 ДЖЕКПОТ!!! 🎉"
+    elif result[0] == result[1] or result[1] == result[2] or result[0] == result[2]:
+        win_text = "\n\n✨ Близко! Ещё разок?"
+    else:
+        win_text = "\n\n💸 Мимо... Попробуй ещё."
+    
+    await message.answer(
+        f"🎰 *Игровой автомат!*\n\n"
+        f"{result_str}\n"
+        f"─────────────"
+        f"{win_text}",
+        parse_mode="Markdown"
+    )
+
+
+@router.message(Command("pick"))
+async def cmd_pick(message: Message):
+    args = message.text.replace("/pick", "").strip()
+    if not args or "," not in args:
+        await message.answer(
+            "🎯 *Алекс выбирает!*\n\n"
+            "Использование: /pick вариант1, вариант2, вариант3\n\n"
+            "Пример: /pick пицца, шаурма, борщ",
+            parse_mode="Markdown"
+        )
+        return
+    
+    options = [opt.strip() for opt in args.split(",") if opt.strip()]
+    if len(options) < 2:
+        await message.answer("Нужно минимум 2 варианта!")
+        return
+    
+    choice = random.choice(options)
+    
+    reactions = [
+        "Я выбираю...",
+        "Думаю...",
+        "Мой вердикт:",
+        "Очевидный выбор:",
+        "Без вопросов:",
+    ]
+    
+    await message.answer(
+        f"🎯 *Алекс выбирает!*\n\n"
+        f"{random.choice(reactions)}\n\n"
+        f"👉 *{choice}*\n\n"
+        f"Не благодари. 😏",
+        parse_mode="Markdown"
+    )
+
+
+@router.message(Command("whowin"))
+async def cmd_whowin(message: Message):
+    args = message.text.replace("/whowin", "").strip()
+    if not args or " vs " not in args.lower() and " или " not in args.lower():
+        await message.answer(
+            "⚔️ *Кто круче?*\n\n"
+            "Использование: /whowin кофе vs чай\n"
+            "Или: /whowin понедельник или пятница",
+            parse_mode="Markdown"
+        )
+        return
+    
+    for sep in [" vs ", " VS ", " или ", " Или "]:
+        if sep in args:
+            parts = args.split(sep)
+            break
+    
+    if len(parts) != 2:
+        await message.answer("Формат: /whowin вариант1 vs вариант2")
+        return
+    
+    option1, option2 = parts[0].strip(), parts[1].strip()
+    
+    roll = random.random()
+    if roll < 0.4:
+        winner, loser = option1, option2
+    elif roll < 0.8:
+        winner, loser = option2, option1
+    else:
+        await message.answer(
+            f"⚔️ *{option1} vs {option2}*\n\n"
+            f"🤝 Ничья! Оба хороши по-своему.",
+            parse_mode="Markdown"
+        )
+        return
+    
+    votes1 = random.randint(1, 100)
+    votes2 = 100 - votes1
+    
+    await message.answer(
+        f"⚔️ *{option1} vs {option2}*\n\n"
+        f"🏆 Победитель: *{winner}*!\n\n"
+        f"{option1}: {'█' * (votes1 // 5)}{'░' * (20 - votes1 // 5)} {votes1}%\n"
+        f"{option2}: {'█' * (votes2 // 5)}{'░' * (20 - votes2 // 5)} {votes2}%",
+        parse_mode="Markdown"
+    )
+
+
+@router.message(Command("hot"))
+async def cmd_hot(message: Message):
+    rating = random.randint(60, 100)
+    bars = "🔥" * (rating // 10) + "🖤" * (10 - rating // 10)
+    
+    comments = {
+        (90, 100): "Да ты просто бомба! 🔥🔥🔥",
+        (80, 89): "Огонь! Не каждый день такого встретишь.",
+        (70, 79): "Вполне горячо. Можно смотреть.",
+        (60, 69): "Ну... среднячок. Но есть потенциал.",
+    }
+    
+    for (low, high), comment in comments.items():
+        if low <= rating <= high:
+            text = comment
+            break
+    
+    await message.answer(
+        f"🔥 *Твой горячий рейтинг:*\n\n"
+        f"{rating}/100\n"
+        f"{bars}\n\n"
+        f"{text}",
+        parse_mode="Markdown"
+    )
+
+
+ZODIAC_SIGNS = ["овен", "телец", "близнецы", "рак", "лев", "дева", "весы", "скорпион", "стрелец", "козерог", "водолей", "рыбы"]
+
+@router.message(Command("horoscope"))
+async def cmd_horoscope(message: Message):
+    sign = None
+    args = message.text.replace("/horoscope", "").strip().lower()
+    
+    for s in ZODIAC_SIGNS:
+        if s in args:
+            sign = s
+            break
+    
+    if not sign:
+        sign = random.choice(ZODIAC_SIGNS)
+    
+    horoscopes = [
+        "Сегодня звёзды благоволят... ладно, они просто не против. Действуй!",
+        "Осторожно: что-то хорошее может случиться. Будь готов.",
+        "Неожиданный поворот! Но хороший. Наверное.",
+        "День перемен. Или просто вторник. Неважно — решай сам.",
+        "Твоя интуиция сегодня на высоте. Слушай внутренний голос.",
+        "Кто-то оценит твои старания. Или нет. Но ты старайся.",
+        "Отличный день для новых начинаний. Или для того чтобы забить.",
+        "Звёзды говорят: пора рискнуть. Но не больше чем обычно.",
+        "Сегодня будет продуктивно... или лениво. Зависит от тебя.",
+        "Судьба даёт знак. Заметишь — хорошо. Нет — ну и ладно.",
+    ]
+    
+    await message.answer(
+        f"🔮 *Гороскоп для {sign.capitalize()}*\n\n"
+        f"{random.choice(horoscopes)}\n\n"
+        f"_Не воспринимай всерьёз. Или воспринимай. Мне всё равно._",
+        parse_mode="Markdown"
+    )
+
+
+@router.message(Command("motivation"))
+async def cmd_motivation(message: Message):
+    motivations = [
+        "Делай то, что боишься. Потом будешь бояться большего. 😏",
+        "Ты не обязан быть лучшим. Достаточно быть лучше вчерашнего.",
+        "Сложно — значит интересно. Если не сложно — тебе скучно.",
+        "Каждый великий проект когда-то был 'а давай попробуем'.",
+        "Не жди идеального момента. Он не наступит. Начинай.",
+        "Ты тратишь энергию на жалобы? Потрать её на действия.",
+        "Ошибки — это не провалы. Это учебные материалы.",
+        "Кто не рискует — тот не пьёт шампанское. И не живёт полной жизнью.",
+        "Ты сильнее чем думаешь. И слабее чем надеешься. В этом баланс.",
+        "Сегодняшний день — это первый день остатка твоей жизни. Неплохо, да?",
+        "Путь в 1000 миль начинается с одного шага. Сделай его.",
+        "Не сдавайся. Остальные сдались раньше.",
+    ]
+    
+    await message.answer(
+        f"💪 *Мотивашка от Алекса:*\n\n"
+        f"_{random.choice(motivations)}_\n\n"
+        f"_Теперь иди и сделай что-нибудь._ 👊",
+        parse_mode="Markdown"
+    )
+
+
+@router.message(Command("stats"))
+async def cmd_stats(message: Message):
+    user_id = message.from_user.id
+    history = get_conversation_history(user_id, limit=1000)
+    memory_context = get_memory_context(user_id)
+    
+    user = init_user(user_id)
+    name = user.get("name") or "Незнакомец"
+    dark_mode = user.get("dark_mode", False)
+    reminders = user.get("reminders_enabled", False)
+    
+    msgs_count = len(history) // 2
+    days_ago = "недавно"
+    
+    await message.answer(
+        f"📊 *Статистика общения с Алексом*\n\n"
+        f"👤 Имя: {name}\n"
+        f"💬 Сообщений: ~{msgs_count}\n"
+        f"🌙 Режим: {'Тёмный' if dark_mode else 'Обычный'}\n"
+        f"🔔 Напоминания: {'Вкл' if reminders else 'Выкл'}\n"
+        f"🧠 Темы в памяти: {len(memory_context) if memory_context else 0} символов\n\n"
+        f"_Спасибо что общаешься со мной. Или нет._ 😏",
+        parse_mode="Markdown"
+    )
+
+
+MEME_TEMPLATES = [
+    "Когда ты: {user} а жизнь: {life}",
+    "{user}: Я самый умный!\nЖизнь: *смеётся*",
+    "{user} — {life} в 3 ночи",
+    "Когда кажется что всё хорошо:\n{life}",
+    "{user} ожидание vs {life} реальность",
+]
+
+
+@router.message(Command("meme"))
+async def cmd_meme(message: Message):
+    args = message.text.replace("/meme", "").strip()
+    user_name = get_user_setting(message.from_user.id, "name") or "Ты"
+    
+    meme = random.choice(MEME_TEMPLATES)
+    
+    templates_life = [
+        "а потом бац, и всё сломалось",
+        "решает иначе",
+        "говорит 'не сегодня'",
+        "делает свой выбор",
+        "поворачивается спиной",
+        "даёт пинка",
+        "меняет правила",
+        "забывает про тебя",
+    ]
+    
+    meme_text = meme.format(user=user_name, life=random.choice(templates_life))
+    
+    await message.answer(
+        f"🖼️ *Мем дня:*\n\n"
+        f"_{meme_text}_\n\n"
+        f"_Отправь другу, пусть страдает_ 😈",
+        parse_mode="Markdown"
+    )
+
+
+@router.message(Command("reverse"))
+async def cmd_reverse(message: Message):
+    args = message.text.replace("/reverse", "").strip()
+    if not args:
+        await message.answer("Напиши что-нибудь после команды.\n\nПример: /reverse Привет")
+        return
+    
+    reversed_text = args[::-1]
+    
+    await message.answer(
+        f"🔄 *Реверс!*\n\n"
+        f"Было: {args}\n"
+        f"Стало: {reversed_text}",
+        parse_mode="Markdown"
+    )
+
+
+@router.message(Command("coin"))
+async def cmd_coin(message: Message):
+    result = random.choice(["Орёл 🦅", "Решка 🪙"])
+    await message.answer(f"🪙 *Подбрасываем...*\n\n*{result}*", parse_mode="Markdown")
+
+
+@router.message(Command("randomnum"))
+async def cmd_randomnum(message: Message):
+    args = message.text.replace("/randomnum", "").strip()
+    
+    if "-" in args:
+        try:
+            parts = args.split("-")
+            min_num, max_num = int(parts[0].strip()), int(parts[1].strip())
+        except:
+            min_num, max_num = 1, 100
+    else:
+        min_num, max_num = 1, 100
+    
+    result = random.randint(min_num, max_num)
+    await message.answer(f"🎱 *Случайное число!*\n\nТвой номер: *{result}*", parse_mode="Markdown")
 
 
 @dp.startup()
