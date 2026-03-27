@@ -19,6 +19,10 @@ from config import Settings
 from alex_prompt import (
     ALEX_SYSTEM_PROMPT,
     ALEX_DARK_ROMANCE,
+    ALEX_GENTLE,
+    ALEX_FLIRTY,
+    ALEX_WIZARD,
+    ALEX_HYPE,
     REMINDER_MORNING,
     REMINDER_EVENING
 )
@@ -33,6 +37,15 @@ client = Groq(api_key=settings.groq_api_key)
 DATA_FILE = "user_data.json"
 MAX_HISTORY = 60
 SHORT_TERM_MEMORY_SIZE = 10
+
+PERSONAS = {
+    "normal": {"name": "☀️ Обычный", "prompt": ALEX_SYSTEM_PROMPT, "desc": "Саркастичный, с характером"},
+    "dark": {"name": "🌙 Тёмный", "prompt": ALEX_DARK_ROMANCE, "desc": "Ролеплей для взрослых"},
+    "gentle": {"name": "💚 Добрый", "prompt": ALEX_GENTLE, "desc": "Тёплый и заботливый"},
+    "flirty": {"name": "😘 Кокетка", "prompt": ALEX_FLIRTY, "desc": "Флирт и комплименты"},
+    "wizard": {"name": "🧙 Мудрец", "prompt": ALEX_WIZARD, "desc": "Философ и мыслитель"},
+    "hype": {"name": "🚀 Энергия", "prompt": ALEX_HYPE, "desc": "Позитив и энтузиазм"},
+}
 
 STICKERS_NORMAL = {
     "[laugh]": "CAACAgIAAxkBAAEB0mVnAaMJpL3D2R9S6Z1L8F5t9a7G9gACjwEAAstZxCVLqO3Dq6pumC4E",
@@ -548,7 +561,8 @@ async def cmd_profile(message: Message):
     appearance = user.get("appearance") or "Не описано"
     interests = user.get("interests") or "Не указаны"
     remind = "✅ Вкл" if user.get("reminders_enabled") else "❌ Выкл"
-    mode = "🌙 Тёмный" if user.get("dark_mode") else "☀️ Обычный"
+    persona_key = user.get("persona", "normal")
+    persona_name = PERSONAS.get(persona_key, PERSONAS["normal"])["name"]
     
     await message.answer(
         f"📋 Твой профиль:\n\n"
@@ -558,9 +572,65 @@ async def cmd_profile(message: Message):
         f"Интересы: {interests}\n\n"
         f"Настройки:\n"
         f"Напоминания: {remind}\n"
-        f"Режим: {mode}\n\n"
-        f"Изменить: /setname /setgender /setappearance /setinterests"
+        f"Персонаж: {persona_name}\n\n"
+        f"Изменить: /setname /setgender /setappearance /setinterests\n"
+        f"Персонаж: /persona"
     )
+
+
+@router.message(Command("persona"))
+async def cmd_persona(message: Message):
+    user_id = message.from_user.id
+    current = get_user_setting(user_id, "persona", "normal")
+    
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=f"{'✅ ' if current == 'normal' else ''}☀️ Обычный")],
+            [KeyboardButton(text=f"{'✅ ' if current == 'gentle' else ''}💚 Добрый")],
+            [KeyboardButton(text=f"{'✅ ' if current == 'flirty' else ''}😘 Кокетка")],
+            [KeyboardButton(text=f"{'✅ ' if current == 'wizard' else ''}🧙 Мудрец")],
+            [KeyboardButton(text=f"{'✅ ' if current == 'hype' else ''}🚀 Энергия")],
+            [KeyboardButton(text=f"{'✅ ' if current == 'dark' else ''}🌙 Тёмный")],
+        ],
+        resize_keyboard=True
+    )
+    
+    desc = "\n".join([f"{p['name']}: {p['desc']}" for p in PERSONAS.values()])
+    
+    await message.answer(
+        f"🎭 *Выбери персонажа:*\n\n{desc}\n\n"
+        f"_current: {PERSONAS.get(current, PERSONAS['normal'])['name']}_",
+        reply_markup=keyboard,
+        parse_mode="Markdown"
+    )
+
+
+@router.message(F.text & F.text.in_(["☀️ Обычный", "💚 Добрый", "😘 Кокетка", "🧙 Мудрец", "🚀 Энергия", "🌙 Тёмный"]))
+async def handle_persona_choice(message: Message):
+    user_id = message.from_user.id
+    
+    choice_map = {
+        "☀️ Обычный": "normal",
+        "💚 Добрый": "gentle",
+        "😘 Кокетка": "flirty",
+        "🧙 Мудрец": "wizard",
+        "🚀 Энергия": "hype",
+        "🌙 Тёмный": "dark",
+    }
+    
+    persona_key = choice_map.get(message.text)
+    if persona_key:
+        set_user_setting(user_id, "persona", persona_key)
+        persona = PERSONAS[persona_key]
+        
+        clear_history(user_id)
+        
+        await message.answer(
+            f"🎭 Персонаж изменён!\n\n"
+            f"{persona['name']}: {persona['desc']}\n\n"
+            f"История чата очищена — новый персонаж, новое начало 😏",
+            reply_markup=None
+        )
 
 
 @router.message(Command("menu"))
@@ -587,8 +657,8 @@ async def cmd_help(message: Message):
 
 ⚙️ *Настройки*
 `/remind` — вкл/выкл напоминания
-`/dark` — тёмный режим 🌙
-`/normal` — обычный режим
+`/persona` — сменить персонажа 🎭
+`/profile` — твой профиль
 
 🧠 *Память*
 `/memory` — что я помню
@@ -852,8 +922,11 @@ async def handle_message(message: Message, command: str = None):
     user_message = message.text
     
     init_user(user_id)
-    dark_mode = get_user_setting(user_id, "dark_mode", False)
-    prompt = get_personalized_prompt(user_id, ALEX_DARK_ROMANCE if dark_mode else ALEX_SYSTEM_PROMPT)
+    persona_key = get_user_setting(user_id, "persona", "normal")
+    persona = PERSONAS.get(persona_key, PERSONAS["normal"])
+    base_prompt = persona["prompt"]
+    
+    prompt = get_personalized_prompt(user_id, base_prompt)
     
     add_to_history(user_id, "user", user_message)
     
@@ -861,6 +934,8 @@ async def handle_message(message: Message, command: str = None):
     messages = [{"role": "system", "content": prompt}]
     for msg in history:
         messages.append(msg)
+    
+    is_dark = persona_key == "dark"
     
     try:
         await bot.send_chat_action(user_id, "typing")
@@ -877,7 +952,7 @@ async def handle_message(message: Message, command: str = None):
         add_to_history(user_id, "assistant", assistant_message)
         update_memory(user_id, user_message, assistant_message)
         
-        await process_response(message, assistant_message, dark_mode, user_message)
+        await process_response(message, assistant_message, is_dark, user_message)
         
     except Exception as e:
         await message.answer(f"что-то накрылось... {e}")
@@ -936,8 +1011,13 @@ async def regenerate_response(callback: CallbackQuery):
     
     await callback.answer("Думаю...")
     
-    dark_mode = get_user_setting(user_id, "dark_mode", False)
-    prompt = get_personalized_prompt(user_id, ALEX_DARK_ROMANCE if dark_mode else ALEX_SYSTEM_PROMPT)
+    persona_key = get_user_setting(user_id, "persona", "normal")
+    persona = PERSONAS.get(persona_key, PERSONAS["normal"])
+    base_prompt = persona["prompt"]
+    
+    prompt = get_personalized_prompt(user_id, base_prompt)
+    
+    is_dark = persona_key == "dark"
     
     history = get_conversation_history(user_id, limit=20)
     messages = [{"role": "system", "content": prompt}]
@@ -966,14 +1046,17 @@ async def regenerate_response(callback: CallbackQuery):
                 save_data(data)
                 break
         
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [
-                InlineKeyboardButton(text="🔄 Новое", callback_data=f"regen_new"),
-                InlineKeyboardButton(text="⏭️ Пропустить", callback_data=f"skip_msg")
-            ]
-        ])
+        if is_dark:
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="🔄 Новое", callback_data=f"regen_new"),
+                    InlineKeyboardButton(text="⏭️ Пропустить", callback_data=f"skip_msg")
+                ]
+            ])
+            sent = await bot.send_message(user_id, new_text, reply_markup=keyboard)
+        else:
+            sent = await bot.send_message(user_id, new_text)
         
-        sent = await bot.send_message(user_id, new_text, reply_markup=keyboard)
         set_user_setting(user_id, "last_response_msg_id", sent.message_id)
         set_user_setting(user_id, "last_response_text", new_text)
         
