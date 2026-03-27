@@ -64,8 +64,9 @@ MAIN_MENU = InlineKeyboardMarkup(inline_keyboard=[
      InlineKeyboardButton(text="☀️ Обычный", callback_data="menu_normal")],
     [InlineKeyboardButton(text="🔔 Напоминания", callback_data="menu_remind"),
      InlineKeyboardButton(text="🧠 Память", callback_data="menu_memory")],
-    [InlineKeyboardButton(text="🔄 Забыть", callback_data="menu_forget"),
+    [InlineKeyboardButton(text="🎉 Развлечения", callback_data="menu_fun"),
      InlineKeyboardButton(text="📖 Помощь", callback_data="menu_help")],
+    [InlineKeyboardButton(text="🔄 Забыть", callback_data="menu_forget")],
 ])
 
 WEBAPP_URL = "https://alex-bot-production-214d.up.railway.app"
@@ -593,6 +594,14 @@ async def cmd_help(message: Message):
 `/forget` — забыть всё
 `/reset` — очистить историю
 
+🎉 *Развлечения*
+`/fun` — меню развлечений
+`/fortune` — гадание 🎱
+`/joke` — анекдот 😂
+`/quiz` — викторина 🧠
+`/rps` — камень-ножницы-бумага 🎮
+`/magic Вопрос` — магический шар 🔮
+
 🎮 *Меню*
 `/menu` — красивое меню
 `/app` — открыть веб-приложение 🌙
@@ -707,9 +716,91 @@ async def handle_callback(callback):
             "`/menu` — показать меню\n"
             "`/profile` — профиль\n"
             "`/dark` — тёмный режим\n"
-            "`/reset` — очистить историю",
+            "`/reset` — очистить историю\n"
+            "`/fun` — развлечения",
             parse_mode="Markdown",
             reply_markup=MAIN_MENU
+        )
+    
+    elif data == "menu_fun":
+        fun_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🎱 Гадание", callback_data="fun_fortune")],
+            [InlineKeyboardButton(text="😂 Анекдот", callback_data="fun_joke")],
+            [InlineKeyboardButton(text="🧠 Викторина", callback_data="fun_quiz")],
+            [InlineKeyboardButton(text="🎮 РПС", callback_data="fun_rps")],
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="menu_back")],
+        ])
+        await callback.message.edit_text(
+            "🎉 *Развлечения*\n\n"
+            "Выбери что хочешь:",
+            parse_mode="Markdown",
+            reply_markup=fun_keyboard
+        )
+    
+    elif data == "fun_fortune":
+        fortunes = [
+            "🎱 Сегодня звёзды говорят... забей, они врут. Но попробуй что-то новое.",
+            "🎱 Осторожно: кроличья нога сегодня не сработает. Но ты справишься.",
+            "🎱 Совет дня: если сомневаешься — не сомневайся.",
+            "🎱 Ты сегодня будешь либо прав, либо узнаешь что-то новое.",
+            "🎱 Небо говорит: пора действовать. Или хотя бы поспать.",
+            "🎱 Внимание: сегодняшний день — эксперимент. Удача включена.",
+            "🎱 Звёзды намекают: не ешь тот сомнительный стритфуд.",
+            "🎱 Сегодня тот день, когда всё может пойти... ну ты понял.",
+        ]
+        fun_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔄 Ещё гадание", callback_data="fun_fortune")],
+            [InlineKeyboardButton(text="🔙 К развлечениям", callback_data="menu_fun")],
+        ])
+        await callback.message.edit_text(random.choice(fortunes), reply_markup=fun_keyboard)
+    
+    elif data == "fun_joke":
+        jokes = [
+            "— Как называется фитнес для программистов?\n— Скрипты.\n— 😐",
+            "— Что сказал SQL, когда его обидели?\n— ALTER TABLE feelings DROP COLUMN trust",
+            "— Почему Python не пошёл на свидание?\n— Боялся, что его бросят (IndentationError)",
+            "Почему дедлайны так называются? Потому что ближе к ним — тем мёртвее проект.",
+            "Есть 10 типов людей: те, кто понимает двоичный код, и те, кто нет. 👀",
+            "— Чем отличается Linux от винды?\n— Винда: 'У тебя мало памяти'\n— Линукс: 'Иди гуляй'",
+            "— Что делает кошка на Vim?\n— :q!",
+            "Жизнь как npm: установишь лишнее — проект не собирается.",
+        ]
+        fun_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="😂 Ещё анекдот", callback_data="fun_joke")],
+            [InlineKeyboardButton(text="🔙 К развлечениям", callback_data="menu_fun")],
+        ])
+        await callback.message.edit_text(random.choice(jokes), reply_markup=fun_keyboard)
+    
+    elif data == "fun_quiz":
+        quiz = random.choice(QUIZ_QUESTIONS)
+        fun_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🧠 Ответ", callback_data="fun_quiz_answer")],
+            [InlineKeyboardButton(text="🔄 Новая викторина", callback_data="fun_quiz")],
+            [InlineKeyboardButton(text="🔙 К развлечениям", callback_data="menu_fun")],
+        ])
+        await callback.message.edit_text(f"🧠 *Викторина!*\n\n{quiz['q']}", parse_mode="Markdown", reply_markup=fun_keyboard)
+    
+    elif data == "fun_quiz_answer":
+        quiz = random.choice(QUIZ_QUESTIONS)
+        fun_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔄 Новая викторина", callback_data="fun_quiz")],
+            [InlineKeyboardButton(text="🔙 К развлечениям", callback_data="menu_fun")],
+        ])
+        await callback.message.edit_text(f"Ответ: *{quiz['a']}* 😏", parse_mode="Markdown", reply_markup=fun_keyboard)
+    
+    elif data == "fun_rps":
+        await callback.message.edit_text(
+            "🎮 *Камень-Ножницы-Бумага*\n\n"
+            "Напиши мне `/rps` и начнём игру!",
+            parse_mode="Markdown",
+            reply_markup=MAIN_MENU
+        )
+    
+    elif data == "menu_back":
+        await callback.message.edit_text(
+            "🎛 *Главное меню*\n\nВыбери действие:",
+            reply_markup=MAIN_MENU,
+            parse_mode="Markdown"
         )
     
     await callback.answer()
@@ -767,6 +858,170 @@ async def process_response(message: Message, text: str, dark_mode: bool):
             await message.answer_sticker(sticker_to_send)
         except Exception:
             pass
+
+
+RPS_KEYBOARD = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="🪨 Камень"), KeyboardButton(text="✂️ Ножницы"), KeyboardButton(text="📄 Бумага")],
+        [KeyboardButton(text="🔙 Назад")]
+    ],
+    resize_keyboard=True
+)
+
+QUIZ_QUESTIONS = [
+    {"q": "Что сказал ноль восьмёрке?", "a": "классная фигура!"},
+    {"q": "Почему программисты путают Хэллоуин и Рождество?", "a": "потому что OCT 31 = DEC 25"},
+    {"q": "Что делает коала на работе?", "a": "ничего, его за это любят"},
+    {"q": "Какой рост у Теслы?", "a": "1.98 — уровень амбиций"},
+    {"q": "Что общего между кофе и марихуаной?", "a": "оба заставляют тебя видеть странные вещи"},
+    {"q": "Почему пианино не может выиграть в казино?", "a": "оно не знает правил, но всё равно пытается"},
+    {"q": "Что сказал гриб, когда его спросили 'как дела'?", "a": "споро!"},
+    {"q": "Почему пельмени победили в войне?", "a": "они всех обернули вокруг пальца"},
+]
+
+RPS_CHOICES = ["🪨 Камень", "✂️ Ножницы", "📄 Бумага"]
+
+
+@router.message(Command("fortune"))
+async def cmd_fortune(message: Message):
+    fortunes = [
+        "🎱 Сегодня звёзды говорят... забей, они врут. Но попробуй что-то новое.",
+        "🎱 Осторожно: кроличья нога сегодня не сработает. Но ты справишься.",
+        "🎱 Совет дня: если сомневаешься — не сомневайся.",
+        "🎱 Ты сегодня будешь либо прав, либо узнаешь что-то новое.",
+        "🎱 Оракул молчит... ладно, шучу. Будь увереннее.",
+        "🎱 Небо говорит: пора действовать. Или хотя бы поспать.",
+        "🎱 Внимание: сегодняшний день — эксперимент. Удача включена.",
+        "🎱 Звёзды намекают: не ешь тот сомнительный стритфуд.",
+        "🎱 Совет: если кто-то напрягает — возможно, это ты напрягаешь.",
+        "🎱 Сегодня тот день, когда всё может пойти... ну ты понял.",
+    ]
+    await message.answer(random.choice(fortunes))
+
+
+@router.message(Command("joke"))
+async def cmd_joke(message: Message):
+    jokes = [
+        "— Как называется фитнес для программистов?\n— Скрипты.\n— 😐",
+        "— Что сказал SQL, когда его обидели?\n— ALTER TABLE feelings DROP COLUMN trust",
+        "— Почему Python не пошёл на свидание?\n— Боялся, что его бросят (IndentationError)",
+        "Почему дедлайны так называются? Потому что ближе к ним — тем мёртвее проект.",
+        "Есть 10 типов людей: те, кто понимает двоичный код, и те, кто нет. 👀",
+        "— Чем отличается Linux от винды?\n— Винда: 'У тебя мало памяти'\n— Линукс: 'У тебя идеальный день, иди гуляй'",
+        "— Как успокоить программиста?\n— Сказать, что баг на самом деле фича.",
+        "Жизнь как npm: установишь лишнее — проект не собирается. Удалишь нужное — всё сломалось.",
+        "— Что делает кошка на Vim?\n— :q!",
+        "Лучший комментарий в коде: 'Это работает, не трогай' © Дед-разработчик",
+    ]
+    await message.answer(random.choice(jokes))
+
+
+@router.message(Command("quiz"))
+async def cmd_quiz(message: Message):
+    quiz = random.choice(QUIZ_QUESTIONS)
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="📖 Ответ")],
+            [KeyboardButton(text="🔙 Назад")]
+        ],
+        resize_keyboard=True
+    )
+    set_user_setting(message.from_user.id, "quiz_active", True)
+    set_user_setting(message.from_user.id, "quiz_answer", quiz["a"])
+    
+    await message.answer(f"🧠 Викторина!\n\n{quiz['q']}", reply_markup=keyboard)
+
+
+@router.message(F.text == "📖 Ответ")
+async def handle_quiz_answer(message: Message):
+    if get_user_setting(message.from_user.id, "quiz_active"):
+        answer = get_user_setting(message.from_user.id, "quiz_answer", "...")
+        set_user_setting(message.from_user.id, "quiz_active", False)
+        
+        responses = [
+            f"Правильный ответ: {answer} 😏",
+            f"Ответ: {answer} Не знал? Не страшно.",
+            f"{answer} — вот так вот.",
+        ]
+        await message.answer(random.choice(responses), reply_markup=None)
+
+
+@router.message(Command("rps"))
+async def cmd_rps(message: Message):
+    set_user_setting(message.from_user.id, "rps_active", True)
+    await message.answer(
+        "🎮 Камень-Ножницы-Бумага!\n\nВыбирай:",
+        reply_markup=RPS_KEYBOARD
+    )
+
+
+@router.message(F.text.in_(RPS_CHOICES))
+async def handle_rps(message: Message):
+    if not get_user_setting(message.from_user.id, "rps_active"):
+        return
+    
+    user_choice = message.text
+    ai_choice = random.choice(RPS_CHOICES)
+    
+    results = {
+        ("🪨 Камень", "✂️ Ножницы"): "win",
+        ("🪨 Камень", "📄 Бумага"): "lose",
+        ("✂️ Ножницы", "📄 Бумага"): "win",
+        ("✂️ Ножницы", "🪨 Камень"): "lose",
+        ("📄 Бумага", "🪨 Камень"): "win",
+        ("📄 Бумага", "✂️ Ножницы"): "lose",
+    }
+    
+    if user_choice == ai_choice:
+        result_text = "🤝 Ничья!"
+    elif results.get((user_choice, ai_choice)) == "win":
+        result_text = "😂 Твой ход победил! Я проиграл."
+    else:
+        result_text = "😈 Мой ход победил! Ты проиграл."
+    
+    await message.answer(
+        f"🎮 Результат:\n\nТы: {user_choice}\nЯ: {ai_choice}\n\n{result_text}",
+        reply_markup=None
+    )
+    set_user_setting(message.from_user.id, "rps_active", False)
+
+
+@router.message(F.text == "🔙 Назад")
+async def handle_back(message: Message):
+    set_user_setting(message.from_user.id, "rps_active", False)
+    set_user_setting(message.from_user.id, "quiz_active", False)
+    await message.answer("Вернулся в чат 👋", reply_markup=None)
+
+
+@router.message(Command("fun"))
+async def cmd_fun(message: Message):
+    fun_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🎱 Гадание", callback_data="fun_fortune")],
+        [InlineKeyboardButton(text="🧠 Викторина", callback_data="fun_quiz")],
+        [InlineKeyboardButton(text="😂 Анекдот", callback_data="fun_joke")],
+        [InlineKeyboardButton(text="🎮 РПС", callback_data="fun_rps")],
+    ])
+    await message.answer("🎉 *Развлечения:*\n\nВыбирай что хочешь:", reply_markup=fun_keyboard, parse_mode="Markdown")
+
+
+@router.message(Command("magic"))
+async def cmd_magic(message: Message):
+    args = message.text.replace("/magic", "").strip()
+    if not args:
+        await message.answer("Напиши /magic Вопрос\n\nПример: /magic Стоит ли мне идти на работу?")
+        return
+    
+    predictions = [
+        "Безусловно да. Или нет. Кто знает...",
+        "Звёзды говорят — попробуй. Но осторожно.",
+        "Мой хрустальный шар показывает... пофиг.",
+        "Ответ: зависит от того, сколько ты готов потерять.",
+        "Да. Но потом пожалеешь. Или нет.",
+        "Не сегодня. Подожди неделю.",
+        "А ты как думаешь? 🤔",
+        "Скорее да, чем нет. Но это не точно.",
+    ]
+    await message.answer(f"🔮 *{args}*\n\n{random.choice(predictions)}", parse_mode="Markdown")
 
 
 @dp.startup()
