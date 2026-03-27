@@ -277,6 +277,11 @@ def get_personalized_prompt(user_id: int, base_prompt: str) -> str:
     user = init_user(user_id)
     additions = []
     
+    scenario = user.get("scenario")
+    if scenario:
+        additions.append(f"📖 СЦЕНАРИЙ РОЛЕПЛЕЯ:\n{scenario}")
+        additions.append("РОЛЬ: строго следуй сценарию! Действуй в рамках описанной ситуации.")
+    
     if user.get("name"):
         additions.append(f"Имя собеседника: {user['name']}")
     
@@ -563,19 +568,28 @@ async def cmd_profile(message: Message):
     remind = "✅ Вкл" if user.get("reminders_enabled") else "❌ Выкл"
     persona_key = user.get("persona", "normal")
     persona_name = PERSONAS.get(persona_key, PERSONAS["normal"])["name"]
+    scenario = user.get("scenario")
     
-    await message.answer(
-        f"📋 Твой профиль:\n\n"
+    text = (
+        f"📋 *Твой профиль:*\n\n"
         f"Имя: {name}\n"
         f"Пол: {gender}\n"
         f"Внешность: {appearance}\n"
         f"Интересы: {interests}\n\n"
-        f"Настройки:\n"
+        f"📌 *Настройки:*\n"
         f"Напоминания: {remind}\n"
-        f"Персонаж: {persona_name}\n\n"
-        f"Изменить: /setname /setgender /setappearance /setinterests\n"
-        f"Персонаж: /persona"
+        f"Персонаж: {persona_name}\n"
     )
+    
+    if scenario:
+        text += f"\n📖 *Сценарий:*\n{scenario[:100]}..."
+    
+    text += (
+        f"\n\n_Изменить: /setname /setgender /setappearance /setinterests\n"
+        f"Персонаж: /persona | Сценарий: /scenario_"
+    )
+    
+    await message.answer(text, parse_mode="Markdown")
 
 
 @router.message(Command("persona"))
@@ -633,6 +647,147 @@ async def handle_persona_choice(message: Message):
         )
 
 
+@router.message(Command("scenario"))
+async def cmd_scenario(message: Message):
+    user_id = message.from_user.id
+    args = message.text.replace("/scenario", "").strip()
+    
+    if not args:
+        current = get_user_setting(user_id, "scenario")
+        if current:
+            await message.answer(
+                f"📖 *Текущий сценарий:*\n\n{current}\n\n"
+                f"_Напиши /scenario и новый сюжет чтобы изменить_",
+                parse_mode="Markdown"
+            )
+        else:
+            await message.answer(
+                "📖 *Сценарий для ролеплея*\n\n"
+                "Напиши /scenario и опиши сюжет.\n\n"
+                "_Пример:_\n"
+                "`/scenario Мы встретились в кафе во время дождя. Ты — холодный бизнесмен, я — случайная девушка.`",
+                parse_mode="Markdown"
+            )
+        return
+    
+    set_user_setting(user_id, "scenario", args)
+    clear_history(user_id)
+    
+    await message.answer(
+        f"📖 *Сценарий установлен!*\n\n{args}\n\n"
+        f"Теперь начни ролеплей — пиши сообщения как обычно!\n"
+        f"_Чтобы изменить — /scenario новый сюжет_",
+        parse_mode="Markdown"
+    )
+
+
+@router.message(Command("history"))
+async def cmd_history(message: Message):
+    user_id = message.from_user.id
+    history = get_conversation_history(user_id, limit=50)
+    
+    if not history:
+        await message.answer("📜 История пуста. Начни общение!")
+        return
+    
+    text = "📜 *История чата:*\n\n"
+    count = 0
+    
+    for msg in history[-20:]:
+        role = "👤 Ты" if msg["role"] == "user" else "🤖 Алекс"
+        content = msg["content"][:100] + "..." if len(msg["content"]) > 100 else msg["content"]
+        text += f"{role}:\n{content}\n\n"
+        count += 1
+        if count >= 10:
+            text += "_...показано последние 10 сообщений_"
+            break
+    
+    await message.answer(text, parse_mode="Markdown")
+
+
+@router.message(Command("newchat"))
+async def cmd_newchat(message: Message):
+    user_id = message.from_user.id
+    clear_history(user_id)
+    set_user_setting(user_id, "scenario", None)
+    
+    await message.answer(
+        "💬 *Новый чат создан!*\n\n"
+        "История и сценарий очищены.\n"
+        "Можешь начать сначала или задать новый сценарий:\n"
+        "/scenario твой сюжет",
+        parse_mode="Markdown"
+    )
+
+
+@router.message(Command("chats"))
+async def cmd_chats(message: Message):
+    user_id = message.from_user.id
+    data = load_data()
+    uid_str = str(user_id)
+    
+    chats = data.get("chats", {}).get(uid_str, {})
+    
+    if not chats:
+        await message.answer(
+            "📚 *Твои чаты*\n\n"
+            "У тебя пока нет сохранённых чатов.\n"
+            "Текущий чат не сохранён.",
+            parse_mode="Markdown"
+        )
+        return
+    
+    text = "📚 *Твои сохранённые чаты:*\n\n"
+    for i, (chat_id, chat_data) in enumerate(chats.items(), 1):
+        name = chat_data.get("name", f"Чат {i}")
+        msgs = len(chat_data.get("history", []))
+        text += f"{i}. {name} ({msgs} сообщений)\n"
+    
+    text += "\n_Используй /loadchat номер для загрузки_"
+    await message.answer(text, parse_mode="Markdown")
+
+
+@router.message(Command("savechat"))
+async def cmd_savechat(message: Message):
+    user_id = message.from_user.id
+    args = message.text.replace("/savechat", "").strip()
+    
+    if not args:
+        args = f"Чат {datetime.now().strftime('%d.%m %H:%M')}"
+    
+    history = get_conversation_history(user_id, limit=1000)
+    scenario = get_user_setting(user_id, "scenario")
+    
+    if not history:
+        await message.answer("Нечего сохранять — чат пустой!")
+        return
+    
+    data = load_data()
+    uid_str = str(user_id)
+    
+    if "chats" not in data:
+        data["chats"] = {}
+    if uid_str not in data["chats"]:
+        data["chats"][uid_str] = {}
+    
+    chat_id = datetime.now().strftime("%Y%m%d%H%M%S")
+    data["chats"][uid_str][chat_id] = {
+        "name": args,
+        "history": history,
+        "scenario": scenario,
+        "created": datetime.now().isoformat()
+    }
+    
+    save_data(data)
+    
+    await message.answer(
+        f"💾 *Чат сохранён!*\n\n"
+        f"Название: {args}\n"
+        f"Сообщений: {len(history)}",
+        parse_mode="Markdown"
+    )
+
+
 @router.message(Command("menu"))
 async def cmd_menu(message: Message):
     await message.answer(
@@ -658,7 +813,13 @@ async def cmd_help(message: Message):
 ⚙️ *Настройки*
 `/remind` — вкл/выкл напоминания
 `/persona` — сменить персонажа 🎭
-`/profile` — твой профиль
+
+🎭 *Ролеплей*
+`/scenario` — задать сюжет ролеплея
+`/history` — посмотреть историю чата
+`/newchat` — новый чат
+`/savechat` — сохранить чат
+`/chats` — список сохранённых чатов
 
 🧠 *Память*
 `/memory` — что я помню
