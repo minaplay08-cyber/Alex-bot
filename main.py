@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 from aiogram import Bot, Dispatcher, Router, F
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, CallbackQuery
 from aiogram.filters import Command
 from groq import Groq
 
@@ -826,8 +826,28 @@ async def handle_callback(callback):
     await callback.answer()
 
 
+@router.callback_query(F.data.startswith("regen_"))
+async def handle_regen(callback: CallbackQuery):
+    await regenerate_response(callback)
+
+
+@router.callback_query(F.data.startswith("skip_"))
+async def handle_skip(callback: CallbackQuery):
+    await skip_response(callback)
+
+
+@router.callback_query(F.data == "regen_new")
+async def handle_regen_new(callback: CallbackQuery):
+    await regenerate_response(callback)
+
+
+@router.callback_query(F.data == "skip_msg")
+async def handle_skip_msg(callback: CallbackQuery):
+    await skip_response(callback)
+
+
 @router.message(F.text & ~F.text.startswith("/"))
-async def handle_message(message: Message):
+async def handle_message(message: Message, command: str = None):
     user_id = message.from_user.id
     user_message = message.text
     
@@ -843,6 +863,9 @@ async def handle_message(message: Message):
         messages.append(msg)
     
     try:
+        await bot.send_chat_action(user_id, "typing")
+        await asyncio.sleep(random.uniform(1.5, 3.5))
+        
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=messages,
@@ -854,13 +877,13 @@ async def handle_message(message: Message):
         add_to_history(user_id, "assistant", assistant_message)
         update_memory(user_id, user_message, assistant_message)
         
-        await process_response(message, assistant_message, dark_mode)
+        await process_response(message, assistant_message, dark_mode, user_message)
         
     except Exception as e:
         await message.answer(f"что-то накрылось... {e}")
 
 
-async def process_response(message: Message, text: str, dark_mode: bool):
+async def process_response(message: Message, text: str, dark_mode: bool, user_message: str = None):
     stickers = STICKERS_DARK if dark_mode else STICKERS_NORMAL
     sticker_to_send = None
     
@@ -870,14 +893,114 @@ async def process_response(message: Message, text: str, dark_mode: bool):
             text = text.replace(tag, "").strip()
             break
     
+    msg_id = None
+    
     if text:
-        await message.answer(text)
+        if dark_mode and user_message:
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="🔄 Новое", callback_data=f"regen_{message.message_id}"),
+                    InlineKeyboardButton(text="⏭️ Пропустить", callback_data=f"skip_{message.message_id}")
+                ]
+            ])
+            sent = await message.answer(text, reply_markup=keyboard)
+            msg_id = sent.message_id
+            set_user_setting(message.from_user.id, "last_response_msg_id", msg_id)
+            set_user_setting(message.from_user.id, "last_response_text", text)
+            set_user_setting(message.from_user.id, "last_user_message", user_message)
+        else:
+            await message.answer(text)
     
     if sticker_to_send:
         try:
             await message.answer_sticker(sticker_to_send)
         except Exception:
             pass
+
+
+async def regenerate_response(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    
+    last_msg_id = get_user_setting(user_id, "last_response_msg_id")
+    last_text = get_user_setting(user_id, "last_response_text")
+    last_user_msg = get_user_setting(user_id, "last_user_message")
+    
+    if not last_text or not last_user_msg:
+        await callback.answer("Нечего regenerating...")
+        return
+    
+    try:
+        await callback.message.delete()
+    except:
+        pass
+    
+    await callback.answer("Думаю...")
+    
+    dark_mode = get_user_setting(user_id, "dark_mode", False)
+    prompt = get_personalized_prompt(user_id, ALEX_DARK_ROMANCE if dark_mode else ALEX_SYSTEM_PROMPT)
+    
+    history = get_conversation_history(user_id, limit=20)
+    messages = [{"role": "system", "content": prompt}]
+    for msg in history[:-1]:
+        messages.append(msg)
+    
+    await bot.send_chat_action(user_id, "typing")
+    await asyncio.sleep(random.uniform(1.5, 3.5))
+    
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=messages,
+            max_tokens=350,
+            temperature=0.9
+        )
+        
+        new_text = response.choices[0].message.content
+        
+        history_update = get_conversation_history(user_id, limit=100)
+        for i, msg in enumerate(history_update):
+            if msg.get("role") == "assistant" and msg.get("content") == last_text:
+                history_update[i]["content"] = new_text
+                data = load_data()
+                data["conversation_history"][str(user_id)] = history_update
+                save_data(data)
+                break
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="🔄 Новое", callback_data=f"regen_new"),
+                InlineKeyboardButton(text="⏭️ Пропустить", callback_data=f"skip_msg")
+            ]
+        ])
+        
+        sent = await bot.send_message(user_id, new_text, reply_markup=keyboard)
+        set_user_setting(user_id, "last_response_msg_id", sent.message_id)
+        set_user_setting(user_id, "last_response_text", new_text)
+        
+    except Exception as e:
+        await bot.send_message(user_id, f"Ошибка... {e}")
+
+
+async def skip_response(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    last_text = get_user_setting(user_id, "last_response_text")
+    
+    if last_text:
+        history = get_conversation_history(user_id, limit=100)
+        for i, msg in enumerate(history):
+            if msg.get("role") == "assistant" and msg.get("content") == last_text:
+                history.pop(i)
+                data = load_data()
+                data["conversation_history"][str(user_id)] = history
+                save_data(data)
+                break
+    
+    try:
+        await callback.message.delete()
+    except:
+        pass
+    
+    await callback.answer("Пропущено")
 
 
 RPS_KEYBOARD = ReplyKeyboardMarkup(
