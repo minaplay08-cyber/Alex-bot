@@ -351,7 +351,7 @@ async def send_reminder(user_id: int, time_of_day: str, dark_mode: bool = False)
     
     try:
         response = client.chat.completions.create(
-            model="mixtral-8x7b-32768",
+            model="llama-3.3-70b-versatile",
             messages=messages,
             max_tokens=300,
             temperature=0.8
@@ -377,7 +377,7 @@ async def cmd_start(message: Message):
     
     try:
         response = client.chat.completions.create(
-            model="mixtral-8x7b-32768",
+            model="llama-3.3-70b-versatile",
             messages=messages,
             max_tokens=350,
             temperature=0.85
@@ -431,7 +431,7 @@ async def cmd_dark(message: Message):
     
     try:
         response = client.chat.completions.create(
-            model="mixtral-8x7b-32768",
+            model="llama-3.3-70b-versatile",
             messages=messages,
             max_tokens=300,
             temperature=0.8
@@ -733,7 +733,7 @@ async def handle_message(message: Message):
     
     try:
         response = client.chat.completions.create(
-            model="mixtral-8x7b-32768",
+            model="llama-3.3-70b-versatile",
             messages=messages,
             max_tokens=350,
             temperature=0.85
