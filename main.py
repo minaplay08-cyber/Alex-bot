@@ -351,10 +351,10 @@ async def send_reminder(user_id: int, time_of_day: str, dark_mode: bool = False)
     
     try:
         response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="mixtral-8x7b-32768",
             messages=messages,
-            max_tokens=200,
-            temperature=1.0
+            max_tokens=300,
+            temperature=0.8
         )
         await bot.send_message(user_id, response.choices[0].message.content)
     except Exception:
@@ -377,10 +377,10 @@ async def cmd_start(message: Message):
     
     try:
         response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="mixtral-8x7b-32768",
             messages=messages,
-            max_tokens=256,
-            temperature=1.0
+            max_tokens=350,
+            temperature=0.85
         )
         await message.answer(
             response.choices[0].message.content + 
@@ -431,10 +431,10 @@ async def cmd_dark(message: Message):
     
     try:
         response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="mixtral-8x7b-32768",
             messages=messages,
-            max_tokens=200,
-            temperature=1.0
+            max_tokens=300,
+            temperature=0.8
         )
         await message.answer(response.choices[0].message.content)
     except Exception:
@@ -733,10 +733,10 @@ async def handle_message(message: Message):
     
     try:
         response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="mixtral-8x7b-32768",
             messages=messages,
-            max_tokens=512,
-            temperature=1.2
+            max_tokens=350,
+            temperature=0.85
         )
         
         assistant_message = response.choices[0].message.content
