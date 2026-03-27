@@ -806,7 +806,7 @@ async def handle_callback(callback):
     await callback.answer()
 
 
-@router.message(F.text & ~Command())
+@router.message(F.text & ~F.text.startswith("/"))
 async def handle_message(message: Message):
     user_id = message.from_user.id
     user_message = message.text
